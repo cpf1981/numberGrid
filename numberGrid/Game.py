@@ -5,7 +5,7 @@ Created on Mon Aug 26 18:52:24 2024
 
 @author: chris
 """
-# streamlit run /Users/chris/Documents/projects/numberGrid/Game.py
+# streamlit run /Users/chris/Documents/GitRepos/numberGrid/numberGrid/Game.py
 
 import streamlit as st
 ss = st.session_state
@@ -80,8 +80,8 @@ def view():
                     g[guessIdx] = val
                 else:
                     k = f'{r}_{c}'
-                    guess = ctns[r][c].number_input('label hidden', 1, 9, None,
-                                                    key=k, label_visibility='collapsed')
+                    guess = ctns[r][c].number_input('label hidden', 1, 9, None, placeholder='???',
+                                                    key=k, label_visibility='collapsed', )
                     g[guessIdx] = guess
                 guessIdx += 1
             elif val == Board.BLANK:
