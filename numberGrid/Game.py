@@ -25,6 +25,151 @@ import numpy as np
 GUESSES = 'GUESSES'
 
 
+def view():
+    st.header('Number grid')
+
+    # Button for a new board
+    with st.sidebar:
+        keys = {'nVisible': 2, 'inclMult': True, 'inclSub': True, 'allowNeg': True}
+        for k, v in keys.items():
+            if not k in ss: ss[k] = v
+        nVisible = st.number_input('Visible', 0, 9, key='nVisible', on_change=reset)
+        inclMult = st.checkbox('Include multiplication', key='inclMult', on_change=reset)
+        inclSub = st.checkbox('Include subtraction', key='inclSub', on_change=reset)
+        allowNeg = st.checkbox('Allow negative answers', key='allowNeg', on_change=reset)
+        if st.button('New board'):
+            reset()
+
+    if not GUESSES in ss:
+        ss[GUESSES] = [None] * len(board._numbers)
+    g = ss[GUESSES]
+    nums = board._numbers
+    for n in board.getVisible():
+        idx = nums.index(n)
+        g[idx] = n
+
+    grid = board.asDataFrame()
+    # vis = [str() for _ in board._visible]
+    vis = board._visible
+    
+    # Create display
+    st.write('Solve this...')
+    # Create array of containers
+    with st.container(border=True):
+        ctns = []
+        for r in range(grid.shape[0]):
+            row = []
+            stCols = st.columns(grid.shape[1])
+            for c in range(grid.shape[1]):
+                row.append(stCols[c].container(border=not grid.values[r, c] is None))
+            ctns.append(row)
+    # ctns = pd.DataFrame(ctns).values
+    
+    guessIdx = 0
+    for r, row in enumerate(ctns):
+        for c, ctn in enumerate(row):
+            isAns = (r == len(ctns) - 1) or (c == len(row) - 1)
+            isGuess = (r % 2 == 0) and (c % 2 == 0) and not isAns 
+            val = grid.iloc[r, c]
+            
+            if isGuess:
+                # st.write('r, c', r, c)
+                if val in board._visible:
+                    # st.write(r, c, type(r), type(c))
+                    ctns[r][c].write(val)
+                    g[guessIdx] = val
+                else:
+                    k = f'{r}_{c}'
+                    guess = ctns[r][c].number_input('label hidden', 1, 9, None,
+                                                    key=k, label_visibility='collapsed')
+                    g[guessIdx] = guess
+                guessIdx += 1
+            elif val == Board.BLANK:
+                pass
+            elif val == 'x':
+                ctns[r][c].write(val)
+            elif isAns:
+               ctns[r][c].write(f' = {val:.0f}')
+            else:
+                ctns[r][c].write(f'\{val}')
+                
+                
+                    
+            
+    # st.write(board._numbers)
+    # st.write(g)
+    status = pd.DataFrame({'guess': g, 'answer': board._numbers})
+    if all(status['guess'] == status['answer']):
+        st.balloons()
+        st.snow()
+    if st.checkbox('Show answers'):
+        st.write(status)
+    
+    
+    
+    
+    
+    
+    # # Populate containers, taking inputs
+    # guess = 0
+    # for i in range(grid.shape[0]):
+    #     for j in range(grid.shape[1]):
+    #         isBoard = (i < grid.shape[0] - 1) and (j < grid.shape[1] - 1)
+    #         isGuess = (i % 2 == 0) and (j % 2 == 2) & (i != grid.shape[0] - 1) & (j != grid.shape[1] - 1)
+    #         if isGuess: guess += 1
+    #         val = valToStr(grid.values[i, j])
+            
+            
+    #         if val == Board.HIDDEN:
+    #             k = f'{i}_{j}'
+    #             if not k in ss:
+    #                 ss[k] = None
+    #                 print(f'set ss[{k}] to {ss[k]}')
+    #             ctns[i, j].number_input('label_hidden', 1, 9, None,
+    #                                     key=k, label_visibility='collapsed',
+    #                                     on_change=updateGuesses, args=(guess, k))
+    #             # guess += 1
+    #         elif val == Board.BLANK:
+    #             pass
+    #         elif val in vis and isBoard:
+    #             ctns[i, j].write(val)
+    #             # guess += 1
+    #         elif isBoard:
+    #             ctns[i, j].write(f'{val}')
+    #         elif not isBoard:
+    #             ctns[i, j].write(f'= {val}')
+    #         else:
+    #             msg = 'Did not expect this:\n\t'
+    #             msg += f'val: {val}, i: {i}, j: {j}, guess: {guess}'
+    #             raise Exception(msg)
+    #             # if (j == grid.shape[0] - 1) and (i % 2 == 0):
+    #             #     ctns[i, j].write(f'= {val}')
+    #             # elif (i == grid.shape[0] - 1) and (j % 2 == 0):
+    #             #     ctns[i, j].write(f'= {val}')
+            
+            
+    
+    # st.header('Checking guesses')    
+    # if checkGuesses(board):
+        
+    #     st.balloons()
+    #     time.sleep(0.5)
+    #     st.button('Next puzzle', on_click=reset)
+    # else:
+    #     st.header(':blue[Keep going...]')
+    #     # st.snow()    
+
+
+
+
+
+
+
+
+
+
+
+
 def valToStr(val):
     if val in ['+', '-', '/']:
         val = f'\{val}'
@@ -67,8 +212,13 @@ def checkGuesses(board):
     
     return all([str(b) == str(g) for b, g in zip(ans, guesses)])
 
-def reset(nVisible=None):
-    board.newBoard(nVisible)
+def reset():
+    keys = ['nVisible', 'inclMult', 'inclSub', 'allowNeg']
+    kwargs = {}
+    for k in keys:
+        kwargs[k] = ss[k]
+    
+    board.newBoard(**kwargs)
     grid = board.asDataFrame()
     for i in range(grid.shape[0]):
         for j in range(grid.shape[1]):
@@ -89,92 +239,6 @@ def setVisible():
         guesses[idx] = None
     
     
-def view():
-    st.header('Number grid')
-
-    # Button for a new board
-    with st.sidebar:
-        st.number_input('Visible', 0, 9, value=2, key='nVisible', on_change=setVisible)
-        if st.button('New board'):
-            reset()
-
-    if not GUESSES in ss:
-        ss[GUESSES] = [None] * len(board._numbers)
-    g = ss[GUESSES]
-    nums = board._numbers
-    for n in board.getVisible():
-        idx = nums.index(n)
-        g[idx] = n
-    
-    # with st.expander('Solution', True):
-    #     st.info('For dev, will be deleted')
-    #     st.write(board.asDataFrame(True))
-    #     st.write('Visible:', board._visible)
-
-    grid = board.asDataFrame()
-    vis = [str() for _ in board._visible]
-    
-    # Create display
-    st.write('Solve this...')
-    # Create array of containers
-    with st.container(border=True):
-        ctns = []
-        for r in range(grid.shape[0]):
-            row = []
-            stCols = st.columns(grid.shape[1])
-            for c in range(grid.shape[1]):
-                row.append(stCols[c].container(border=not grid.values[r, c] is None))
-            ctns.append(row)
-    ctns = pd.DataFrame(ctns).values
-    
-    # Populate containers, taking inputs
-    guess = 0
-    for i in range(grid.shape[0]):
-        for j in range(grid.shape[1]):
-            isBoard = (i < grid.shape[0] - 1) and (j < grid.shape[1] - 1)
-            isGuess = (i % 2 == 0) and (j % 2 == 2) & (i != grid.shape[0] - 1) & (j != grid.shape[1] - 1)
-            if isGuess: guess += 1
-            val = valToStr(grid.values[i, j])
-            
-            
-            if val == Board.HIDDEN:
-                k = f'{i}_{j}'
-                if not k in ss:
-                    ss[k] = None
-                    print(f'set ss[{k}] to {ss[k]}')
-                ctns[i, j].number_input('label_hidden', 1, 9, None,
-                                        key=k, label_visibility='collapsed',
-                                        on_change=updateGuesses, args=(guess, k))
-                # guess += 1
-            elif val == Board.BLANK:
-                pass
-            elif val in vis and isBoard:
-                ctns[i, j].write(val)
-                # guess += 1
-            elif isBoard:
-                ctns[i, j].write(f'{val}')
-            elif not isBoard:
-                ctns[i, j].write(f'= {val}')
-            else:
-                msg = 'Did not expect this:\n\t'
-                msg += f'val: {val}, i: {i}, j: {j}, guess: {guess}'
-                raise Exception(msg)
-                # if (j == grid.shape[0] - 1) and (i % 2 == 0):
-                #     ctns[i, j].write(f'= {val}')
-                # elif (i == grid.shape[0] - 1) and (j % 2 == 0):
-                #     ctns[i, j].write(f'= {val}')
-            
-            
-    
-    st.header('Checking guesses')    
-    if checkGuesses(board):
-        
-        st.balloons()
-        time.sleep(0.5)
-        st.button('Next puzzle', on_click=reset)
-    else:
-        st.header(':blue[Keep going...]')
-        # st.snow()    
 
 
 

@@ -33,24 +33,22 @@ class Board():
         self._played = 0
         self._won = 0
         
-    def newBoard(self, nVisible=None, inclMult=True, allowNeg=True):
+    def newBoard(self, nVisible=None, inclMult=True, inclSub=True, allowNeg=True):
         '''Board consists of a grid with three rows and three columns.
         Each row / column is a expression with three integers and two operators.
         
         Operators and missing number are currently set at random, but should
         be determined by self._difficulty
         '''
-        
         if allowNeg:
             if not nVisible is None: self._nVisible = nVisible
             
             self._numbers = list(range(1, 10))
             np.random.shuffle(self._numbers)
             
-            if inclMult:
-                opMap = {0: '+', 1: '-', 2: 'x'}
-            else:
-                opMap = {0: '+', 1: '-'}
+            opMap = {0: '+'}
+            if inclSub: opMap[len(opMap)] = '-'
+            if inclMult: opMap[len(opMap)] = 'x'
             self._operators = np.random.randint(0, len(opMap), 12)
             self._operators = [opMap[op] for op in self._operators]
             
@@ -65,10 +63,10 @@ class Board():
             self._boardFinish = None
         else:
             ctr = 0
-            self.newBoard(nVisible, inclMult, allowNeg=True)
+            self.newBoard(nVisible, inclMult, inclSub, allowNeg=True)
             while min(self._answers) < 0 and ctr < 1000:
                 ctr += 1
-                self.newBoard(nVisible, inclMult, allowNeg=True)
+                self.newBoard(nVisible, inclMult, inclSub, allowNeg=True)
             print(f'Took {ctr} iterations to get non-negative board')
     
     def getVisible(self):
